@@ -1,8 +1,6 @@
 <template>
   <div id="app">
-    <status-bar/>
-
-    <console-window/>
+    <console-window :isMoved="consoleMoved" :scrH="windowHeight" :scrW="windowWidth" @moved="consoleMoved = true"/>
   </div>
 </template>
 
@@ -14,7 +12,20 @@ export default {
   components: {
     StatusBar,
     ConsoleWindow
-  }
+  },
+  data() {
+    return {
+      windowHeight: window.innerHeight,
+      windowWidth: window.innerWidth,
+      consoleMoved: false
+    }
+  },
+  mounted() {
+    window.addEventListener('resize', () =>{
+      this.windowHeight = window.innerHeight;
+      this.windowWidth = window.innerWidth;
+    })
+  },
 };
 </script>
 <style>

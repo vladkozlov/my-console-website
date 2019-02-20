@@ -7,48 +7,45 @@ const data = {
     pos4: 0,
 }
 
+function elementDrag(e, element) {    
+    e = e || window.event
+    e.preventDefault()
+
+    data.pos1 = data.pos3 - e.clientX
+    data.pos2 = data.pos4 - e.clientY
+    data.pos3 = e.clientX
+    data.pos4 = e.clientY
+    element.style.top = (element.offsetTop - data.pos2) + 'px'
+    element.style.left = (element.offsetLeft - data.pos1) + 'px'
+}
+
+function closeDragElement() {
+    document.onmouseup = null
+    document.onmousemove = null
+}
+
+function dragMouseDown(e, element) {
+    e = e || window.event
+    e.preventDefault();
+    
+    data.pos3 = e.clientX
+    data.pos4 = e.clientY
+    document.onmouseup = closeDragElement
+    document.onmousemove = (e) => elementDrag(e, element)
+}
+
 
 export default Vue.directive('draggable', {
     inserted: function (el, binding, vnode) {
         let d_el = el;
         
-        let draggable_vnode = vnode.children.find(ch => ch.data.ref === 'draggable-area');
+        let draggable_zone = vnode.children.find(ch => ch.data.ref === 'draggable-area');
         
-        if (draggable_vnode) {
-            d_el = draggable_vnode.elm;
-        }
+        if (draggable_zone) d_el = draggable_zone.elm;
         
-        function dragMouseDown(e) {
-            // console.log(e)
-            e = e || window.event
-            e.preventDefault();
-            
-            data.pos3 = e.clientX
-            data.pos4 = e.clientY
-            document.onmouseup = closeDragElement
-            document.onmousemove = elementDrag
-        }
-        
-        function elementDrag(e) {
-            // console.log('elementDrag');
-            
-            e = e || window.event
-            e.preventDefault()
-        
-            data.pos1 = data.pos3 - e.clientX
-            data.pos2 = data.pos4 - e.clientY
-            data.pos3 = e.clientX
-            data.pos4 = e.clientY
-            el.style.top = (el.offsetTop - data.pos2) + 'px'
-            el.style.left = (el.offsetLeft - data.pos1) + 'px'
-        }
-        
-        function closeDragElement() {
-            // console.log('closeDragElement')
-            document.onmouseup = null
-            document.onmousemove = null
-        }
-
-        d_el.addEventListener('mousedown', e=> dragMouseDown(e))
+        d_el.addEventListener('mousedown', e=> {
+            vnode.context.$emit('moved')
+            dragMouseDown(e, el)
+        })
     }
 })

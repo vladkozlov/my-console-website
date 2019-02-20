@@ -16,7 +16,7 @@
       <p v-for="(line, i) in history" :key="`line-${i}`" v-html="line"></p>
       <p>
         <span v-html="promt"></span>
-        <span ref="userinput" contenteditable="true" class="input" @keypress.enter="submitCommand"/>
+        <span ref="userinput" contenteditable="true" class="input" @keypress.enter="submitCommand" @blur="onUserInputBlurChange" @keydown="onUserInputKeyDown"/>
       </p>
     </div>
   </div>
@@ -27,9 +27,24 @@ import draggable from "../utils/DraggableDirective";
 import datajson from "../assets/data.json";
 
 export default {
+  props: {
+    scrW: {
+      type: Number,
+      default: 0
+    },
+    scrH: {
+      type: Number,
+      default: 0
+    },
+    isMoved: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       currentLanguage: navigator.language,
+      consoleMoved: false,
       user: "guest",
       btns: [{ color: "#4ECB2F" }, { color: "#E6C138" }, { color: "#FA6253" }],
       history: [],
@@ -69,6 +84,18 @@ export default {
       }
     };
   },
+  watch: {
+    scrW(newV, oldV) {
+      if (!this.isMoved) {
+        this.$refs.terminal.style.left = Math.floor(newV / 2 - this.$refs.terminal.clientWidth/2) + 'px';
+      }
+    },
+    scrH(newV, oldV) {
+      if (!this.isMoved) {
+        this.$refs.terminal.style.top = Math.floor(newV / 2 - this.$refs.terminal.clientHeight/2) + 'px';
+      }
+    },
+  },
   computed: {
     promt() {
       let dir_str = this.currentDir.reduce(
@@ -107,6 +134,17 @@ export default {
         );
         console.error(err);
       }
+    },
+    onUserInputBlurChange(e) {
+      var elm = e.target;
+      setTimeout(function() {
+        elm.focus();
+      });
+    },
+    onUserInputKeyDown(e) {
+      const TAB = 9
+      var key = e.which || e.keyCode;
+      if (key == TAB) e.preventDefault();
     },
     parseCommand(input) {
       let cmd = input[0];
@@ -237,11 +275,9 @@ export default {
     },
     clearHistory() {
       this.history = [];
-      this.$refs.userinput.focus();
     },
     clearPromt() {
       this.$refs.userinput.textContent = "";
-      this.$refs.userinput.focus();
     },
     scrollContentToBottom() {
       this.$refs.content.scrollTop = this.$refs.content.scrollHeight;
@@ -254,6 +290,11 @@ export default {
     this.scrollContentToBottom();
   },
   mounted() {
+    this.$refs.userinput.focus();
+    //set default position for terminal
+    this.$refs.terminal.style.left = Math.floor(this.scrW / 2 - this.$refs.terminal.clientWidth/2) + 'px';
+    this.$refs.terminal.style.top = Math.floor(this.scrH / 2 - this.$refs.terminal.clientHeight/2) + 'px';
+    
     if (this.currentLanguage === "ru-RU") {
       this.history = [
         'Привет! Это CLI для работы с этим сайтом 😄 Набери `<b style="color: white">help</b>`, чтобы узнать доступные команды.',
@@ -266,27 +307,6 @@ export default {
       ];
     }
 
-    this.$refs.userinput.focus();
-
-    //durty hack from someguy from stackoverflow to gain input focus if it's lost
-    this.$refs.userinput.addEventListener("blur", function(e) {
-      var elm = e.target;
-      setTimeout(function() {
-        elm.focus();
-      });
-    });
-    this.$refs.userinput.addEventListener("keydown", function(e) {
-      var key = e.which || e.keyCode;
-      if (key == 9) e.preventDefault();
-      // code for tab is 9
-    });
-
-    this.$refs.terminal.style.left = Math.floor(document.body.clientWidth / 2 - this.$refs.terminal.clientWidth/2) + 'px';
-    // this.$refs.terminal.style.top = Math.floor(document.body.clientHeight / 2 - this.$refs.terminal.clientHeight/2) + 'px';
-    // console.log(this.$refs.terminal.clientWidth)
-        // el.style.top = Math.floor(document.body.clientHeight / 2)
-    // this.$refs.terminal.style.left = '20%'
-    // this.$refs.terminal.style.top = '20%'
   }
 };
 </script>
@@ -310,25 +330,21 @@ export default {
 }
 
 .header {
-  z-index: 10;
   cursor: move;
   height: 28px;
-  background-color: #bdbdbd;
   display: flex;
-  display: -webkit-flex;
-  flex-wrap: wrap;
-  -webkit-flex-wrap: wrap;
-  align-content: center;
-  -webkit-align-content: center;
+  flex-direction: row-reverse;
   justify-content: space-between;
+  align-items: center;
+  background-color: #bdbdbd;
   border-radius: 5px 5px 0 0;
-  font-size: 14px;
   padding-left: 15px;
   padding-right: 15px;
+  z-index: 10;
 }
 
 .header-title {
-  font: bold 14px arial, sans-serif;
+  font: bold 0.9em arial, sans-serif;
   background-color: #565656;
   color: transparent;
   text-shadow: 2px 1px 7px rgba(255, 255, 255, 0.5);
@@ -337,15 +353,10 @@ export default {
   background-clip: text;
 }
 
-.header-buttons-block {
-  display: flex;
-  width: 50px;
-  justify-content: space-between;
-  margin-top: 2px;
-}
-
 .header-button {
+  float: left;
   border-radius: 50%;
+  margin-right: 6px;
   height: 12px;
   width: 12px;
 }
